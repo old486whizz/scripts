@@ -15,6 +15,9 @@
 # Version: 1.1       08/12/2011       Paul "1" Sanders
 #              Added "rm *rpm" line to remove the extracted RPMs
 #
+# Version: 1.2       06/02/2012       Paul "1" Sanders
+#              Changed the java plugin to use libnpjp2.so (why!?!?)
+#
 # Don't forget to update "VERSION" variable below
 # ---
 # 
@@ -65,7 +68,7 @@ alternatives --install /usr/bin/java java /usr/java/latest/bin/java 20000 \
 --slave /usr/share/man/man1/servertool.1 servertool.1 /usr/java/latest/man/man1/servertool.1 \
 --slave /usr/share/man/man1/tnameserv.1 tnameserv.1 /usr/java/latest/man/man1/tnameserv.1 \
 --slave /usr/share/man/man1/unpack200.1 unpack200.1 /usr/java/latest/man/man1/unpack200.1 \
---slave /usr/lib/mozilla/plugins/libjavaplugin.so libjavaplugin.so /usr/java/latest/jre/plugin/i386/ns7/libjavaplugin_oji.so
+--slave /usr/lib/mozilla/plugins/libnpjp2.so libnpjp2.so /usr/java/latest/jre/lib/i386/libnpjp2.so
 
 echo "Setting up JAVAC alternative:"
 
