@@ -1,18 +1,31 @@
-#! /bin/bash
-AWK="./| - |.mp3"
+#!/bin/ksh
 
-find . -maxdepth 1 -name "*.mp3"|while read LINE
-do
-	ARTIST=`echo ${LINE} |awk -F '/| - |.mp3' '{print \$2}'`
-	SONG=`echo ${LINE} |awk -F '/| - |.mp3' '{print \$3}'`
-	echo "${LINE}"
-	id3v2 -D "${LINE}"
-	echo " \-ARTIST: ${ARTIST}"
-	echo " \-SONG:   ${SONG}" && echo
-	id3v2 -a "${ARTIST}" -t "${SONG}" "${LINE}"
+if [[ -e $1 ]]
+then
 
-	if [[ "./${ARTIST} - ${SONG}.mp3" != "${LINE}" ]]
-	then
-		echo "PROBLEM: ${LINE}"
-	fi
-done
+	cat $1 | {
+	while read LINE
+	do
+		if [[ `echo $LINE |awk -F . '{print $2}'` = "mp3" ]] &&
+		[[ `echo $LINE |awk -F " - " '{print $3}'` = "" ]] &&
+		[[ `echo $LINE |awk -F " - " '{print $2}'` != "" ]]
+		then
+			artist=`echo $LINE | awk -F . '{print $1}'|awk -F " - " '{print $1}'`
+			song=`echo $LINE | awk -F . '{print $1}'|awk -F " - " '{print $2}'`
+			echo "${artist}===${song}"
+			id3v2 -D "${LINE}"
+			id3tag -1 -a"${artist}" -s"${song}" "${LINE}"
+			echo "named ${LINE} as [${artist}] - [${song}]" >> succ.log
+		else
+			echo "ERROR with ${LINE}"
+			echo "=========" >> error.log
+			echo ${LINE}  >> error.log
+			echo $LINE |awk -F "-" '{print $3}' >> error.log
+			echo $LINE |awk -F . '{print $2}' >> error.log
+			echo "=========" >> error.log
+		fi
+	done
+	}
+else
+	echo "$1 doesn't exist!"
+fi
