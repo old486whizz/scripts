@@ -1,4 +1,4 @@
-#! /bin/ksh
+#! /bin/sh
 
 #================================================================
 #  <SCRIPT> does the following:
@@ -35,7 +35,12 @@
 # DEFINITION AREA
 #    (basic/global variables + functions)
 #================================================================
-alias echo="echo -e"
+if [[ "${SHELL}" = "/bin/ksh" ]]; then
+  set -A argsarr -- $@
+elif [[ "${SHELL}" = "/bin/bash" ]]; then
+  shopt -s xpg_echo
+  typeset -a 'argsarr=("$@")'
+fi
 DATESTAMP="`date +%Y%m%d_%H%M%S`"
 VERSION="x.y"
 SCRIPTHOME="/location"
@@ -56,7 +61,6 @@ usage () {
 #================================================================
 
 INDEX=1
-set -A argsarr -- $@
 
 while [[ ${OPTIND} -le $# ]]; do
   getopts ":o:" FLAG
