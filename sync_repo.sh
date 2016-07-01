@@ -35,7 +35,7 @@ DIRNAME="`pwd`/`dirname $0`"
 
 # Space-delimited list containing '<ID>!<reponame>'
 # ID is so that two repo's don't clash with each other
-REPOLIST="14 15"
+REPOLIST="16 17"
 
 echo "${MARKER}"
 echo "Starting Repo Management Phase #1:"
@@ -52,14 +52,15 @@ for loop1 in ${REPOLIST}; do
   yum -c ${DIRNAME}/conf/yum.conf clean all
 
   cd /server/repo/fedora${loop1}/
-  createrepo -C -g comps.xml .
+  createrepo --update -g comps.xml .
   error_check $? "Creating repo"
 
   chmod -R 755 /server/repo/fedora${loop1}
   error_check $? "Setting correct permissions"
 
-done
+  cd ${DIRNAME}
 
+done
 
 echo "${MARKER}"
 echo "Starting Repo Management Phase #2:"
@@ -76,11 +77,13 @@ for loop1 in ${REPOLIST}; do
   yum -c ${DIRNAME}/conf/yum.conf clean all
 
   cd /server/repo/fedora${loop1}.updates/
-  createrepo -C -g comps.xml .
+  createrepo --update -g comps.xml .
   error_check $? "Creating repo"
 
   chmod -R 755 /server/repo/fedora${loop1}.updates
   error_check $? "Setting correct permissions"
+
+  cd ${DIRNAME}
 
 done
 
