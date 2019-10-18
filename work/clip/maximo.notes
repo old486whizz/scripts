@@ -1,0 +1,46 @@
+======================
+==== MAXIMO NOTES ====
+======================
+
+ ---------- JVM heap dumps -----------
+
+LIST="MAXIMOJVM1 MAXIMOJVM2" # ...
+for i in $LIST; do
+  HEAPD='$AdminControl invoke [$AdminControl queryNames WebSphere:type=JVM,process='$i',*] generateHeapDump'
+  DUMPT='$AdminControl invoke [$AdminControl queryNames WebSphere:type=JVM,process='$i',*] dumpThreads'
+
+  $Websphere_profiles_dir/Custom/bin/wsadmin.sh -lang jacl -user $USER -password $PASS -c "$HEAPD"
+  $Websphere_profiles_dir/Custom/bin/wsadmin.sh -lang jacl -user $USER -password $PASS -c "$DUMPT"
+done
+
+
+ ---------- Clear SIB tables ---------
+
+select table_name from user_tables where table_name like '%SIB%' ;
+drop table SIB000;
+drop table SIB001;
+drop table SIB002;
+drop table SIBCLASSMAP;
+drop table SIBKEYS;
+drop table SIBLISTING;
+drop table SIBOWNER;
+drop table SIBXACTS;
+select table_name from user_tables where table_name like '%SIB%' ;
+
+
+ ----------- show sessions -----------
+
+alter session set nls_date_format='DD-MM-YY HH24:MI:SS';
+col serverhost format a15;
+col SERVERNAME format a25;
+COMPUTE SUM label total OF cnt ON report;
+BREAK ON report;
+
+select serverhost,count(userid) cnt,servername
+from maximo.maxsession
+where servername like '%USE%'
+and logindatetime > '13-03-2012'
+group by serverhost,servername
+order by serverhost,servername;
+
+ -------------------------------------

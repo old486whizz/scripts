@@ -1,0 +1,268 @@
+======================
+==== AIX COMMANDS ====
+======================
+
+ -------------- COMMON: --------------
+mkvg -S -s 128 -y <namevg> hdisk1
+mklv -x 4096 -t jfs2 -y <namelv> <vg> <size>
+crfs -v jfs2 -d <namelv> -m </mnt> -A yes
+mkps -ans<number of LVs> <volume group>
+chfs -a size=[+/-]<size> </mountpoint>
+chsec -f /etc/security/login.cfg -s usw -a pwd_algorithm=ssha512
+getlvcb -AT hd4
+instfix -i |grep -E "ML|SP" |sort -n
+chdev -l iocp0 -P -a autoconfig='defined'
+tprof -skex sleep 60
+df -gt
+lspath
+lsattr -El
+lparstat -i
+lsnim
+rmdev -dl <hdisk>
+lssrc -a
+stopsrc -s <svc>
+startsrc -s <svc>
+svmon -Pu |awk 'BEGIN{printf("%-10s, %-15s, %-10s\n","PID","command","MEMORY_SIZE"); x=0}{if (x==1){printf("%-10s, %-15s, %-10s\n",$1,$2,(($3*4))/1024); TOTAL=TOTAL+($3*4); x=0}}/Pid/{x=1}END{print "TOTAL: ",(TOTAL/1024),"M"}'
+svmon -PO unit=MB |awk '{print $0; if ($3>0){TOTAL=TOTAL+$3}}END{print "TOTAL=",TOTAL}'
+echo cvai |kdb |grep -i vscs
+filemon -o /tmp/filemon.out -O lv,pv -T 500000; sleep 90; trcstop
+installp -acXYgvd ${PKG_LIST}
+pcmpath query device
+pcmpath query adapter
+pcmpath clear device $x count error
+
+# AIX wtmp:
+/usr/sbin/acct/fwtmp  < /var/adm/wtmp | more
+/usr/bin/nulladm /var/adm/wtmp
+more /usr/include/utmp.h
+
+# smitty commit:
+/usr/lib/instl/sm_inst installp_cmd -c -fall -g -X -V2
+
+/usr/lib/instl/sm_inst installp_cmd -u -g -f '' -p -V2
+install_all_updates -cYd .
+install_all_updates -VpYd .
+/usr/sbin/installp -acYvgd . all
+/usr/sbin/installp -apYvgd . all
+
+lsrsrc -x -Ap -D" " IBM.MCP KeyToken HMCIPAddr 2>/dev/null
+
+rmcctrl -z
+mv /var/ct/cfg/ctrmc.mntbl /var/ct/cfg/ctrmc.mntbl.bad
+rmcctrl -A
+rmcctrl -p
+
+# routing -----------
+host,-hopcount,0,,-if,en1,,,,-static,4.3.2.1,1.2.3.254
+net,-hopcount,0,-netmask,255.255.255.128,-if,en2,,,,1.2.3.0,1.3.2.254
+chdev -l inet0 -a route="net,-hopcount,0,-netmask,$MASK,-if,$IF,,,,$DST,$GW"
+# -------------------
+
+for i in `netstat -Aan |awk '/1526/{print $1}'`; do
+  rmsock $i tcpcb
+done |awk '{a[$9]++}END{for(b in a){print b,a[b]}}' |sort -n -k 2
+
+netstat -Aan |awk '/LISTEN/{
+  max=split($5,tmparr,".");
+  x=tmparr[max];
+  ("rmsock "$1" tcpcb" |getline);
+  if ($9 ~ "[0-9]"){
+    arr[$9]=arr[$9]" "x
+  }
+}
+END{
+  for (var in arr){
+    ("ps -ef |awk {if\\(\\$2=="var"\\){print\\ \\$NF}}" |getline prcnme)
+    printf "%-20s %-10s %s\n",prcnme,var,arr[var]
+  }
+}' |sort
+
+
+ ---------------- NIM: ---------------
+niminit -aname=$(uname -n) -apif_name=$(netstat -rn |awk '/default/{print $6}') -amaster=${nim} -aplatform=chrp -aconnect=nimsh
+/usr/lpp/bos.sysmgt/nim/methods/m_sm_nim update_all -t ${server} -l "${lpp_source}" -f '' -f '' -f '' -f 'g' -f 'X' -f '' -f '' -f 'Y' -f ''
+/usr/sbin/nimquery -a host=porud542 
+
+
+ ---------------- HMC: ---------------
+  # pwdreset: init=/bin/rcpwsh
+lssyscfg -r sys -F name |while read SNME ; do echo $SNME ; lssyscfg -r lpar -m $SNME -F name ; done
+lssyscfg -r sys -F name |while read SNME ; do echo $SNME ; lssyscfg -r prof -m $SNME -F 'lpar_name,name' ; done
+lshwres -r io --rsubtype slotchildren -m ${NAME} -F phys_loc,description,wwpn,mac_address,microcode_version
+chhwres -r mem -m ${CEC} -o a -p ${host} -q ${mem} -w 45     # add RAM
+chhwres -r mem -m ${CEC} -o r -p ${host} -q ${mem} -w 45     # remove RAM
+lshwres -m ${CEC} -r mem --level sys | cut -f2 -d","| cut -f2 -d"="
+chhwres -r proc -m ${CEC} -o a -p ${host} --procunits ${procunits}.${proctenths} --procs ${virtprocs} -w 15   # add VCPUs + ent
+chhwres -r proc -m ${CEC} -o r -p ${host} --procunits ${procunits}.${proctenths} --procs ${virtprocs} -w 15   # remove CPUs + ent
+lssysconn -r all
+rmvterm -m <frame> -p <lparname>
+vtmenu
+chhmcusr -u <username> -t passwd
+chsysstate -r lpar -m <frame> -o shutdown -n <lparname> --immed
+chsysstate -r lpar -m <frame> -o on -b sms -n <lparname> -f Default
+chsysstate -r lpar -m <frame> -o on -n <name> -f <profile>
+viosvrcmd -m <frame> -p <VIOlparname> -c "oem_setup_env
+        ..."
+lssvcevents -t console -d 2
+lssvcevents -t hardware -m <SYS>
+lslic -t sys -m <MCHN>
+lslic -t sys -m <MCHN> -F activated_spname,accepted_spname,ecnumber,activated_level,accepted_level,mtms
+updlic -v -m ${SYSNAME} -o a -t sys -l latest -r mountpoint -d /home/hscroot/fw_update     # (update  = 810->812)
+updlic -v -m ${SYSNAME} -o u -t sys -l latest -r mountpoint -d /home/hscroot/fw_update     # (upgrade = 810->830)
+updlic -v -m ${SYSNAME} -o a -t sys -l latest -r ftp -h ${HOST} -u ${USR} --passwd ${PASS} -d ${DIR}
+updhmc -t l -f /home/gby9bpm4/filename.iso
+
+
+ --------------- HACMP: ----------------
+/usr/es/sbin/cluster/cspoc/cli_on_cluster -P halevel -s
+/usr/es/sbin/cluster/utilities
+/usr/es/sbin/cluster/utilities/clRGinfo
+/usr/es/sbin/cluster/utilities/cllsserv
+/usr/es/sbin/cluster/utilities/cllsres
+/usr/es/sbin/cluster/utilities/cldisp
+/usr/es/sbin/cluster/utilities/cldump
+/usr/es/sbin/cluster/utilities/clshowres
+/usr/es/sbin/cluster/clstat
+smitty hacmp
+smitty cspoc
+
+
+ ------------ PRINTING:  -------------
+/usr/sbin/switch.prt -d
+lpstat -a
+lpadmin -p <PRINTQ> -s <PRINTD>!<PRINTQ-ON-D> -o nobanner
+/usr/bin/lsallq
+/usr/lib/lpd/rembak -S ${SERVER} -P ${REM_QUEUE} -N /usr/lib/lpd/aixv2short -L ${FILE}
+
+# ADD network Xerox / Windows print queues:
+echo "1.2.3.4    server001
+1.2.3.5    printer001" >>etc/hosts
+
+lpsystem -T 20 -R 5 -y "${COMMENT}" server001
+lpsystem -T 20 -R 5 -y "${COMMENT}" printer001
+
+lpadmin -p ${LOC_QUEUE1} -s server001!${REM_QUEUE}
+lpadmin -p ${LOC_QUEUE2} -s printer001
+
+accept ${LOC_QUEUE1}
+accept ${LOC_QUEUE2}
+enable ${LOC_QUEUE1}
+enable ${LOC_QUEUE2}
+
+# DELETE:
+reject ${LOC_QUEUE}
+disable ${LOC_QUEUE}
+lpadmin -x ${LOC_QUEUE}
+lpsystem -r ${LOC_QUEUE}
+
+
+ --------------- VIO: ----------------
+echo 'pcmpath query device ' |/usr/ios/cli/ioscli oem_setup_env |grep ^DEV |awk '{print \$2}' >/tmp/file.psan
+for i in $(cat /tmp/file.psan) ; do echo "pcmpath clear device $i count error" |/usr/ios/cli/ioscli oem_setup_env ; done
+
+/usr/ios/cli/ioscli lsmap -all -field clientid svsa backing vtd -fmt :
+/usr/ios/cli/ioscli lsmap -vadapter vhost$2 -field clientid svsa backing vtd -fmt :
+/usr/ios/cli/ioscli rmvdev -vtd <vtd>
+/usr/ios/cli/ioscli chdev -dev <hdisk> -attr reserve_policy=no_reserve pv=yes hcheck_interval=20 algorithm=round_robin
+/usr/ios/cli/ioscli mkvdev -vdev <hdisk> -vadapter <vhost> -dev <vtd_name>
+/usr/ios/cli/ioscli lsvopt
+/usr/ios/cli/ioscli lsrep
+/usr/ios/cli/ioscli lssp
+
+ ------------ FUNCTIONS: -------------
+
+p1 () {
+  # p1 <vgname> <lvname> </mount> <size>
+  mklv -x 4096 -t jfs2 -y $2 $1 1
+  crfs -v jfs2 -d $2 -m $3 -A yes
+  chfs -a size=$4 $3
+  chmod o+rx $3
+  mount $3
+}
+
+p1 () {
+  # p1 <dirname> <COMMAND>
+  x="$(echo $1 |awk -F'/' '{print NF}')"
+  PATHNAME="$1"
+  y=1
+  while (( y < x )); do
+    echo $2 $PATHNAME
+    $2 $PATHNAME
+    PATHNAME="$(dirname $PATHNAME)"
+    ((y+=1))
+  done
+}
+
+p1 () {
+  # p1 <hdisk#> <vhost#> <server> <4-digit WWID>
+  /usr/ios/cli/ioscli chdev -dev hdisk$1 -attr reserve_policy=no_reserve pv=yes hcheck_interval=20 algorithm=round_robin
+  /usr/ios/cli/ioscli mkvdev -vdev hdisk$1 -vadapter vhost$2 -dev $3_$4
+}
+
+p1 () {
+  export time_last_login=0 $(lsuser -a time_last_login $1)
+  [[ $time_last_login > 0 ]] || echo "NO LOGIN"
+  [[ $time_last_login > 0 ]] && perl -we 'print(my $time = localtime '$time_last_login', "\n")'
+}
+
+p1 () {
+  perl -we 'print(my $time = localtime '$1', "\n")'
+}
+
+p1 () {
+  lsattr -El inet0 -a route | awk -F, '$(NF-1)==0{print $0}' |grep -vE "hopcount.*`netstat -rn |awk '/^def/{print $2}'`" |awk '{print "chdev -l inet0 -a delroute=\""$2"\""}'
+  echo "Valid route:"
+  lsattr -El inet0 -a route | awk -F, '$(NF-1)==0{print $0}' |grep -E "hopcount.*`netstat -rn |awk '/^def/{print $2}'`" |awk '{print $2}'
+}
+
+p1 () {
+/bin/ksh93 -s <<EOF
+  printf "%9-s %7-s %7-s %5-s %8-s %7-s %6-s %7-s %s\n" Status DiskID scsiID Prio MaxTrans QDepth Hcheck Size Vhost
+  echo "-------------------------------------------------------------------------"
+  typeset -A arr
+  echo cvai |kdb |awk '/^vsc/{print \$1,\$5,\$NF}' |while read one two; do
+    arr[\$one]="\$two"
+  done
+
+  lspath -F'status name path_id parent connection' |while read a1 a2 a3 a4 a5; do
+    lspath -El \$a2 -p \$a4 -w \$a5 -a priority |read junk priority junk
+	lsattr -El \$a2 -a max_transfer |read junk maxtrans junk
+	lsattr -El \$a2 -a queue_depth |read junk qdepth junk
+	lsattr -El \$a2 -a hcheck_interval |read junk hcheck junk
+	bootinfo -s \$a2 |read size
+    printf "%9-s %7-s %7-s %5-s %8-s %7-s %6-s %7-s %s\n" \$a1 \$a2 \$a4 \$priority \$maxtrans \$qdepth \$hcheck \$size "\${arr[\$a4]}"
+  done
+EOF
+}
+
+p1 () {
+ # Look at the sync progress through a volume group and display an ETA (eta is taken from a 10 second timeframe and re-calc'd every 10 seconds)
+  unset OLDPP
+  unset NEWPP
+  unset STALEPP
+  unset DIFF
+  x=1
+  y=0
+  while (( x = 1 )); do
+    lsvg $1 |grep -i stale |awk '{print $NF}' |read STALEPP
+    [[ $? != 0 ]] && break
+    sleep 1
+    ((y+=1))
+    case $y in
+      1)  OLDPP=$STALEPP
+        ;;
+      11) NEWPP=$STALEPP
+          echo "scale=3;(($OLDPP-$NEWPP)/10)" |bc |read DIFF
+          y=0
+        ;;
+    esac
+    echo "StalePPs: $STALEPP \c"
+    if [[ -z $DIFF ]]; then
+      echo "."
+    else
+      echo "($STALEPP/$DIFF)/60" |bc |read MINS
+      echo "($STALEPP/$DIFF)%60" |bc |read SECS
+      echo "ETA: $MINS:$SECS."
+    fi
+  done
+}

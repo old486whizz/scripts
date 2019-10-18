@@ -1,0 +1,35 @@
+ Java keystore needs updating (SSL certificates)
+---------------------------------------------------
+
+Root CA Certificates are used to sign other certificates which are used on websites. These keys need to be trusted - otherwise you cannot trust the certificates signed by these Root CA's.
+These Root CA Certificates expire every x years (I think 10 years is normal), so around expiry date new certificates are created and start being used.
+
+In order to update the Root CA certificate store in Java, follow this procedure:
+
+1) Find what certificate is causing the problem.
+* You should have an error or problem showing you that there is a Root CA certificate problem. As part of this it describes the certificate which is at fault.
+Eg.
+The certificate issued by CN=VeriSign Class 3 Public Primary Certification Authority - G5, OU="(c) 2006 VeriSign, Inc. - For authorized use only", OU=VeriSign Trust Network, O="VeriSign, Inc.", C=US is not trusted;
+
+2) See if you already have that certificate in your "cacerts" file.
+*  Find out which version of java you're using (ps -ef |grep java).
+*  cd into the "bin" directory (cd /usr/java6_64/bin)
+*  Find the cacerts file (find ../ -name cacerts ... usually it's ../jre/lib/security/cacerts)
+*  List out the contents of the current cacerts file:
+./keytool -list -storepass changeit -keystore ../jre/lib/security/cacerts |grep -vi finger
+
+3) Backup original keystore:
+cp -p ../jre/lib/security/cacerts ../jre/lib/security/cacerts.orig
+
+4) Get the Root CA Certificate from the internet (the Root CA's need to make them publicly avalable).
+=============================================
+*** ONLY DOWNLOAD THE KEY DIRECTLY FROM THE CA!! ***
+=============================================
+*  Eg: http://www.verisign.com/support/roots.html
+*  The key is a simple multi-line text file. Very similar to an SSH private key.
+vi /tmp/verisgn.pem (paste contents of key)
+
+5) Add the CA Certificate to the keystore:
+*  ./keytool -import -v -storepass changeit -file $NEW_CA_FILE -alias NEW_CA_ALIAS -keystore $KEYSTORE_LOCATION
+*  Eg.
+./keytool -import -v -storepass changeit -file /tmp/verisgn.pem -alias verisignclass3g5 -keystore ../jre/lib/security/cacerts 

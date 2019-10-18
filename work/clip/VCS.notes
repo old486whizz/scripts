@@ -1,0 +1,6 @@
+  --------------- VCS: ----------------
+watch -d -n1 "hares -state -sys $(hostname -s) ; hastatus -sum"
+cd /etc/VRTSvcs/conf/config ; hacf -verify .
+hares -state -sys $(hostname -s)
+hagrp [-online | -offline] [-any | -sys $sys]
+hastatus -sum

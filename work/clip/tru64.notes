@@ -1,0 +1,16 @@
+edauth -g $user |sed 's/:u_retired\{0,1\}:/:/' |edauth -s
+edauth -g $user |sed 's/:chkent:/:u_psw_change_reqd:chkent:/' |edauth -s
+
+vi /tcp/files/auth/r/root
+   :u_life#0:
+   :u_pwd#:
+
+"press esc -> boot prompt -> boot pri isl -> 'Y' to IPL -> hpux -is = single user mode"
+
+p1 () {
+  # p1 <user> "<name>" <group> <boss>
+  useradd -g $3 -c "$2[$4]" -m -x administrative_lock_applied=0 -x passwd_expiration_time=90 $1
+  passwd $1
+  edauth -g $1 |sed 's/:chkent:/:u_psw_change_reqd:chkent:/' |edauth -s
+}
+

@@ -1,0 +1,8 @@
+ldapsearch.exe -s sub -h <ldap server> -C -L -b 'dc=local,dc=example,dc=com' -D 'usr1234@local.example.com' -w '******' -x
+
+# Useful for CPU performance:
+time dd if=/dev/urandom of=/dev/null bs=512 count=20480
+
+tcpdump -nni eth0 -s 65535 -w /tmp/file.tcpdump
+
+rsync -auAXhP --bwlimit

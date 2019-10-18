@@ -1,0 +1,27 @@
+kernel additional useful stuffs:
+http://www.cyberciti.biz/howto/question/static/linux-kernel-parameters.php
+
+df -hP
+
+list out the paths + WWIDs:
+for i in /dev/mapper/mpath*[!0-9] ; do \
+  echo $i $(scsi_id -g $i) ; done
+
+multipath -f mpath$x              # flush details of mpath from daemon
+scsi-rescan -r                    # remove the /dev/sd[xyz] devices underneath the multipath
+                                  # "x device(s) removed." 
+                                  
+vgs                               # list out volume groups
+
+lvs $VG                           # LVs on $VG
+pvs |grep $VG                     # which PVs are on the $VG
+
+lvs -o lv_name --noheadings $VG |while read LV ; do \
+  lvconvert -m 0 $VG/$LV $device ; done
+
+lvconvert -m 0 $VG/$LV $device    # remove device from LV mirror + unmirror device
+vgreduce $VG $device              # remove disk from
+
+ ------------- DOCKER: ---------------
+docket stats --no-stream
+docker exec -it "id of running container" bash
